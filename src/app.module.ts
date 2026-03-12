@@ -6,6 +6,7 @@ import { PostService } from './post.service.js';
 import { AuthModule } from './auth/auth.module.js';
 import { PrismaModule } from './infrastructure/prisma.module.js';
 import { UsersModule } from './users/users.module.js';
+import { BotsModule } from './bots/bots.module.js';
 
 @Module({
   imports: [
@@ -13,6 +14,7 @@ import { UsersModule } from './users/users.module.js';
     PrismaModule,
     UsersModule,
     AuthModule,
+    BotsModule,
   ],
   controllers: [AppController],
   providers: [AppService, PostService],

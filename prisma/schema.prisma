@@ -19,6 +19,8 @@ model User {
   name     String
   password String
   posts    Post[]
+  bots     Bot[]
+  servers  Server[]
 }
 
 model Post {
@@ -28,4 +30,110 @@ model Post {
   published Boolean  @default(false)
   author    User?    @relation(fields: [authorId], references: [id])
   authorId  String?
+}
+
+model Server {
+  id        String      @id @default(uuid())
+  name      String
+  ownerId   String?
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+  owner     User?       @relation(fields: [ownerId], references: [id], onDelete: SetNull)
+  channels  Channel[]
+  installs  ServerBot[]
+
+  @@index([ownerId])
+}
+
+model Channel {
+  id        String     @id @default(uuid())
+  serverId  String
+  name      String
+  type      String     @default("TEXT")
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+  server    Server     @relation(fields: [serverId], references: [id], onDelete: Cascade)
+  overrides ServerBotChannelOverride[]
+
+  @@index([serverId])
+}
+
+model Bot {
+  id          String     @id @default(uuid())
+  name        String
+  description String?
+  ownerId     String
+  verified    Boolean    @default(false)
+  permissions BotPermissionType[]
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  owner       User       @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  tokens      BotToken[]
+  installs    ServerBot[]
+
+  @@index([ownerId])
+}
+
+model BotToken {
+  id        String    @id @default(uuid())
+  botId     String
+  tokenHash String    @unique
+  createdAt DateTime  @default(now())
+  expiresAt DateTime?
+  revoked   Boolean   @default(false)
+  bot       Bot       @relation(fields: [botId], references: [id], onDelete: Cascade)
+
+  @@index([botId])
+}
+
+model ServerBot {
+  id               String                     @id @default(uuid())
+  botId            String
+  serverId         String
+  installedBy      String?
+  installedAt      DateTime                   @default(now())
+  enabled          Boolean                    @default(true)
+  bot              Bot                        @relation(fields: [botId], references: [id], onDelete: Cascade)
+  server           Server                     @relation(fields: [serverId], references: [id], onDelete: Cascade)
+  channelOverrides ServerBotChannelOverride[]
+
+  @@unique([botId, serverId])
+  @@index([serverId])
+  @@index([botId])
+}
+
+model ServerBotChannelOverride {
+  id          String                   @id @default(uuid())
+  serverBotId String
+  channelId   String
+  permissions BotChannelPermissionType[]
+  channel     Channel                  @relation(fields: [channelId], references: [id], onDelete: Cascade)
+  serverBot   ServerBot                @relation(fields: [serverBotId], references: [id], onDelete: Cascade)
+
+  @@unique([serverBotId, channelId])
+  @@index([serverBotId])
+  @@index([channelId])
+}
+
+enum BotPermissionType {
+  MANAGE_ROLES
+  MANAGE_CHANNELS
+  SEND_MESSAGES
+  READ_MESSAGES
+  ATTACH_FILES
+  JOIN_VOICE
+  RECORD_AUDIO
+  STREAM_SCREEN
+  MUTE_MEMBERS
+  KICK_MEMBERS
+  CREATE_LESSON
+  CHECK_ATTENDANCE
+  NOTIFY_CHANNEL
+}
+
+enum BotChannelPermissionType {
+  CAN_SEE
+  CAN_WRITE
+  CAN_NOTIFY
+  CAN_JOIN
 }
